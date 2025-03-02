@@ -179,7 +179,7 @@ def main(argv):
         Vnn[:, :, i] = P
         vel_x = xnn[1, 0, i]
         vel_y = xnn[4, 0, i]
-        omega = xnn[7, 0, i]
+        omega = xnn[8, 0, i]
         v = np.sqrt(vel_x**2 + vel_y**2)
         updateB(B=B, dt=dt, v=v, omega=omega, alpha=alpha)
 
