@@ -30,15 +30,15 @@ def updateB(B, dt, v, omega, alpha):
     B[7, 4], B[7, 6], B[7, 7] = alpha*dt, omega*dt, 1-alpha*v*dt
 
 
-def createQ(dt, sigma_a,  varCosTheta, varSineTheta, varOmega):
+def createQ(dt, sigma_a,  var_cos_theta, var_sin_theta, varOmega):
     Qt = np.array([[dt**4/4, dt**3/2, dt**2/2],
                    [dt**3/2, dt**2, dt],
                    [dt**2/2, dt, 1]], dtype=np.double)
     Q = np.zeros(shape=(9, 9), dtype=np.double)
     Q[:3, :3] = sigma_a**2 * Qt
     Q[3:6, 3:6] = sigma_a**2 * Qt
-    Q[6, 6] = varCosTheta
-    Q[7, 7] = varCosTheta
+    Q[6, 6] = var_cos_theta
+    Q[7, 7] = var_cos_theta
     Q[8, 8] = varOmega
     return Q
 
@@ -60,7 +60,7 @@ def main(argv):
                               "params"))
     parser.add_argument(
         "--data_filename", type=str,
-        default="/nfs/ghome/live/rapela/gatsby-swc/collaborations/amanSaleem/data/posAndHeadOrientationCSV/M24086_20250203_0_tracking_2025-02-06T10_39_59.csv",
+        default="~/gatsby-swc/collaborations/aman/data/posAndHeadOrientationCSV/M24086_20250203_0_tracking_2025-02-06T10_39_59.csv",
         help="inputs positions filename")
     parser.add_argument("--results_filename_pattern", type=str,
                         default="../../results/{:08d}_filtered.{:s}")
@@ -114,14 +114,14 @@ def main(argv):
     sigma_a = float(filtering_params[filtering_params_section]["sigma_a"])
     sigma_x = float(filtering_params[filtering_params_section]["sigma_x"])
     sigma_y = float(filtering_params[filtering_params_section]["sigma_y"])
-    sigma_cosTheta_state = \
-        float(filtering_params[filtering_params_section]["sigma_cosTheta_state"])
-    sigma_sinTheta_state = \
-        float(filtering_params[filtering_params_section]["sigma_sinTheta_state"])
-    sigma_cosTheta_measurement = \
-        float(filtering_params[filtering_params_section]["sigma_cosTheta_measurement"])
-    sigma_sinTheta_measurement = \
-        float(filtering_params[filtering_params_section]["sigma_sinTheta_measurement"])
+    sigma_cos_theta_state = \
+        float(filtering_params[filtering_params_section]["sigma_cos_theta_state"])
+    sigma_sin_theta_state = \
+        float(filtering_params[filtering_params_section]["sigma_sin_theta_state"])
+    sigma_cos_theta_measurement = \
+        float(filtering_params[filtering_params_section]["sigma_cos_theta_measurement"])
+    sigma_sin_theta_measurement = \
+        float(filtering_params[filtering_params_section]["sigma_sin_theta_measurement"])
     diag_V0 = np.array(
         [float(sqrt_diag_v0_value_str)
          for sqrt_diag_v0_value_str in filtering_params["params"]["diag_V0"][1:-1].split(",")]
@@ -149,16 +149,16 @@ def main(argv):
     v = np.sqrt(vel_x0**2 + vel_y0**2)
     B = createB(dt=dt, v=v, omega=omega0, alpha=alpha)
     Q = createQ(dt=dt, sigma_a=sigma_a,
-                varCosTheta=sigma_cosTheta_state**2,
-                varSineTheta=sigma_sinTheta_state**2,
+                var_cos_theta=sigma_cos_theta_state**2,
+                var_sin_theta=sigma_sin_theta_state**2,
                 varOmega=sigma_omega**2)
     Z = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 1, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0, 1, 0, 0],
                   [0, 0, 0, 0, 0, 0, 0, 1, 0]], dtype=np.double)
     R = np.diag([sigma_x**2, sigma_y**2,
-                 sigma_cosTheta_measurement**2,
-                 sigma_sinTheta_measurement**2])
+                 sigma_cos_theta_measurement**2,
+                 sigma_sin_theta_measurement**2])
 
     # perform Kalman filtering
     xnn1 = np.empty(shape=(9, 1, measurements.shape[1]), dtype=np.double)
@@ -179,7 +179,7 @@ def main(argv):
         Vnn[:, :, i] = P
         vel_x = xnn[1, 0, i]
         vel_y = xnn[4, 0, i]
-        omega = xnn[7, 0, i]
+        omega = xnn[8, 0, i]
         v = np.sqrt(vel_x**2 + vel_y**2)
         updateB(B=B, dt=dt, v=v, omega=omega, alpha=alpha)
 
