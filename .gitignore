@@ -2,3 +2,7 @@
 
 figures/*
 results/*
+metadata/*
+code/scripts/notes/*
+code/scripts/old/*
+__pycache__
