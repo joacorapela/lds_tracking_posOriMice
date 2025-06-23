@@ -9,11 +9,12 @@ import lds.tracking.plotting
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument("filtered_result_number", type=int,
-                        help="number corresponding to filtered result filename")
-    parser.add_argument("--start_offset_secs", type=int, default=290,
+    parser.add_argument("--filtered_result_number", type=int,
+                        help="number corresponding to filtered results filename",
+                        default=91672310)
+    parser.add_argument("--start_offset_secs", type=int, default=1450,
                         help="start offset in seconds")
-    parser.add_argument("--duration_secs", type=int, default=20,
+    parser.add_argument("--duration_secs", type=int, default=194,
                         help="duration in seconds")
     parser.add_argument("--sample_rate", type=int, default=30,
                         help="sample rate (Hz)")
@@ -56,6 +57,26 @@ def main(argv):
 
     metadata = configparser.ConfigParser()
     metadata.read(metadata_filename)
+    data_filename = metadata["params"]["data_filename"]
+
+    # read data
+    data = pd.read_csv(data_filename)
+
+    start_sample = int(start_offset_secs * sample_rate)
+
+    if duration_secs < 0:
+        number_samples = data.shape[0] - start_sample
+    else:
+        number_samples = int(duration_secs * sample_rate)
+
+    times = np.arange(start_sample,
+                      start_sample+number_samples)/sample_rate
+    data = data.iloc[
+        start_sample:(start_sample+number_samples), :]
+    thetas = np.arctan2(data["noseZ"]-data["implantZ"],
+                        data["noseX"]-data["implantX"])
+    # measurements = np.vstack((data["implantX"], data["implantZ"], np.cos(thetas), np.sin(thetas))).T
+    measurements = np.cos(thetas).T
 
     with open(filtered_result_filename, "rb") as f:
         filter_res = pickle.load(f)
@@ -65,15 +86,15 @@ def main(argv):
         times <= start_offset_secs + duration_secs))[0]
     times = times[samples]
 
-    measured = filter_res["measurements"][2, samples]
-    filtered_mean = filter_res["filter_res"]["xnn"][6, 0, samples]
-    filtered_stds = np.sqrt(filter_res["filter_res"]["Vnn"][6, 6, samples])
+    # measured = filter_res["measurements"][2, samples].numpy()
+    filtered_mean = filter_res["filter_res"]["xnn"][6, 0, samples].numpy()
+    filtered_stds = np.sqrt(filter_res["filter_res"]["Pnn"][6, 6, samples]).numpy()
     filtered_ci_upper = filtered_mean + 1.96*filtered_stds
     filtered_ci_lower = filtered_mean - 1.96*filtered_stds
 
     fig = go.Figure()
     trace = go.Scatter(
-        x=times, y=measured,
+        x=times, y=measurements,
         mode="lines+markers",
         marker={"color": color_measured},
         name="measured",
